@@ -3,8 +3,8 @@ set -eux
 export NXF_OPTS='-Xms1G -Xmx4G'
 
 import_request_tsv="$1"
-project="$3"
-o_owner="$4"
+project="$2"
+o_owner="$3"
 o_group=$project
 
 mkdir -p workdir
