@@ -3,7 +3,6 @@ set -eux
 export NXF_OPTS='-Xms1G -Xmx4G'
 
 import_request_tsv="$1"
-workdir="$2"
 project="$3"
 o_owner="$4"
 o_group=$project
