@@ -9,9 +9,15 @@ output_dir = file(params.output)
 Channel
     .fromPath(params.input)
     .splitCsv(header:true, sep:'\t')
-    .map{ row-> tuple(row.Location, row.Filename, row.project, row.dataset) }
+    .map{ row -> 
+      def project = row.Project
+      def filename = row.filename
+      def src_to_rsync = row.location + "/" + row.filename
+      def o_project = row.OMERO_project
+      def o_dataset = row.OMERO_DATASET
+      tuple(src_to_rsync, filename, project, o_project, o_dataset)
+    }
     .set { prepare_to_import_ch }
-
 
 /*
  * rsync file
@@ -19,17 +25,21 @@ Channel
 process rsync_file {
 
   input:
-  set file(Location), Filename, Project, Dataset from prepare_to_import_ch
+  set src_to_rsync, filename, project, o_project, o_dataset from prepare_to_import_ch
 
   output:
-  set file(file_to_import), Project, Dataset into to_import_ch
+  set dist_to_import, project, o_project, o_dataset into to_import_ch
 
   shell:
-  file_to_import = "${Location}/${Filename}"
-  file_to_import = file("${file_to_import}")
+  dist_folder = "${params.output}/${project}"
+  dist_to_import = "${dist_folder}/${filename}"
   '''
-  test -f "!{file_to_import}"
-  rsync -av !{file_to_import} !{output_dir}/!{project}/!{Filename}
+  echo "src !{src_to_rsync}"
+  echo "dist !{dist_to_import}"
+  mkdir -p "!{dist_folder}"
+  test -f "!{src_to_rsync}"
+  rsync -av "!{src_to_rsync}" "!{dist_to_import}"
+  ls -al "!{dist_to_import}"
   '''
 }
 
@@ -40,15 +50,15 @@ process rsync_file {
 process import_to_omero {
 
   input:
-  set file(file_to_import), Project, Dataset from to_import_ch
+  set dist_to_import, project, o_project, o_dataset from to_import_ch
 
   output:
-  file file_to_import
+  val dist_to_import
 
   shell:
   '''
-  test -f "!{file_to_import}"
-  ssh -t omero-server '/nfs/users/nfs_o/omero/import_public.sh "!{file_to_import}" "!{o_group}" "!{o_owner}" "!{project}" "!{dataset}"'
+  test -f "!{dist_to_import}"
+  ssh -t omero-server '/nfs/users/nfs_o/omero/import.sh "!{dist_to_import}" "!{project}" "!{o_owner}" "!{o_project}" "!{o_dataset}"'
   '''
 
 }
