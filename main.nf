@@ -28,7 +28,7 @@ process rsync_file {
   set src_to_rsync, filename, project, o_project, o_dataset from prepare_to_import_ch
 
   output:
-  set dist_to_import, project, o_project, o_dataset into to_import_ch
+  set filename, dist_folder, project, o_project, o_dataset into to_import_ch
 
   shell:
   dist_folder = "${params.output}/${project}"
@@ -39,6 +39,11 @@ process rsync_file {
   mkdir -p "!{dist_folder}"
   test -f "!{src_to_rsync}"
   rsync -av "!{src_to_rsync}" "!{dist_to_import}"
+
+  if [[ -f "!{src_to_rsync}.render.yml" ]]
+  then
+    rsync -av "!{src_to_rsync}.render.yml" "!{dist_to_import}.render.yml"
+  fi
   ls -al "!{dist_to_import}"
   '''
 }
@@ -50,15 +55,16 @@ process rsync_file {
 process import_to_omero {
 
   input:
-  set dist_to_import, project, o_project, o_dataset from to_import_ch
+  set filename, dist_folder, project, o_project, o_dataset from to_import_ch
 
   output:
   val dist_to_import
 
   shell:
+  dist_to_import = "${dist_folder}/${filename}"
   '''
   test -f "!{dist_to_import}"
-  ssh -t omero-server '/nfs/users/nfs_o/omero/import.sh "!{dist_to_import}" "!{project}" "!{o_owner}" "!{o_project}" "!{o_dataset}"'
+  ssh -t -t imaging.internal.sanger.ac.uk '/nfs/users/nfs_o/omero/import.sh "!{dist_to_import}" "!{project}" "!{o_owner}" "!{o_project}" "!{o_dataset}"'
   '''
 
 }
