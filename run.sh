@@ -8,8 +8,7 @@ pipeline_main="${PIPELINE_MAIN:-main.nf}"
 
 import_request_tsv="$1"
 dir_name="$2"
-project="$3"
-o_owner="$4"
+o_owner="$3"
 
 workdir="/lustre/scratch117/cellgen/cellgeni/imaging_pipeline/${dir_name}"
 output="/nfs/assembled_images/datasets/${dir_name}"
@@ -22,5 +21,4 @@ mkdir -p "${workdir}"
 export PATH="${rootdir}/REQUEST/nf":$PATH
 
 cd $workdir
-
-NXF_OPTS="-Dleveldb.mmap=false" NXF_VER="20.07.1" nextflow -trace nextflow.executor run "${rootdir}/pipeline-import.git/${pipeline_main}" --input $import_request_tsv --output "$output" --o_group "$project" --o_owner "$o_owner" -profile standard,singularity -with-report "$workdir/raport.html" -resume
+NXF_OPTS="-Dleveldb.mmap=false" NXF_VER="20.07.1" nextflow -trace nextflow.executor run "${rootdir}/pipeline-import.git/${pipeline_main}" --input $import_request_tsv --output "$output" --o_owner "$o_owner" -profile standard,singularity -with-report "$workdir/raport.html" -resume
